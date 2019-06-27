@@ -114,6 +114,8 @@ export default Component.extend(FormMixin, EventWizardMixin, {
     this.getForm().form('remove prompt', 'discount_code');
   }),
 
+  donationTickets: computed.filterBy('tickets', 'type', 'donation'),
+
   didInsertElement() {
     if (!this.isCreate && this.get('data.event.copyright') && !this.get('data.event.copyright.content')) {
       this.set('data.event.copyright', this.store.createRecord('event-copyright'));
@@ -121,6 +123,17 @@ export default Component.extend(FormMixin, EventWizardMixin, {
   },
 
   getValidationRules() {
+    window.$.fn.form.settings.rules.checkMaxMin = () => {
+      let returnValue = false;
+      this.donationTickets.forEach(donationTicket => {
+        if (donationTicket.minPrice <= donationTicket.maxPrice && donationTicket.minPrice > 0) {
+          returnValue = true;
+        } else {
+          returnValue = false;
+        }
+      });
+      return returnValue;
+    };
     let validationRules = {
       inline : true,
       delay  : false,
@@ -266,6 +279,40 @@ export default Component.extend(FormMixin, EventWizardMixin, {
             {
               type   : 'integer[1..]',
               prompt : this.l10n.t('Maximum tickets per order should be greater than 0')
+            }
+          ]
+        },
+        ticketMinPrice: {
+          identifier : 'min_price',
+          rules      : [
+            {
+              type   : 'empty',
+              prompt : this.l10n.t('Minimum price for donation tickets required')
+            },
+            {
+              type   : 'number',
+              prompt : this.l10n.t('Invalid number')
+            },
+            {
+              type   : 'checkMaxMin',
+              prompt : this.l10n.t('Ticket min price should be lesser than max price')
+            }
+          ]
+        },
+        ticketMaxPrice: {
+          identifier : 'max_price',
+          rules      : [
+            {
+              type   : 'empty',
+              prompt : this.l10n.t('Maximum price for donation tickets required')
+            },
+            {
+              type   : 'number',
+              prompt : this.l10n.t('Invalid number')
+            },
+            {
+              type   : 'checkMaxMin',
+              prompt : this.l10n.t('Ticket max price should be greater than min price')
             }
           ]
         },

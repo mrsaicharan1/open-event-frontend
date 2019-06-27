@@ -15,8 +15,8 @@ export default Component.extend(FormMixin, {
       && !this.get('authManager.currentUser.isVerified');
   }),
 
-  shouldDisableOrderButton: computed('isUnverified', 'hasTicketsInOrder', function() {
-    return !this.hasTicketsInOrder;
+  shouldDisableOrderButton: computed('hasTicketsInOrder', 'isDonationPriceValid', function() {
+    return !(this.hasTicketsInOrder && this.isDonationPriceValid);
   }),
 
   showTaxIncludedMessage: computed('taxInfo.isTaxIncludedInPrice', function() {
@@ -38,6 +38,22 @@ export default Component.extend(FormMixin, {
     return sumBy(this.tickets.toArray(),
       ticket => (ticket.orderQuantity || 0)
     ) > 0;
+  }),
+
+  donationTickets: computed.filterBy('data', 'type', 'donation'),
+
+  isDonationPriceValid: computed('donationTickets.@each.orderQuantity', 'donationTickets.@each.price', function() {
+    let returnValue = false;
+    this.donationTickets.forEach(donationTicket => {
+      if (donationTicket.orderQuantity >= 0) {
+        if (donationTicket.price >= donationTicket.minPrice) {
+          returnValue = true;
+        } else {
+          returnValue = false;
+        }
+      }
+    });
+    return returnValue;
   }),
 
   total: computed('tickets.@each.orderQuantity', 'tickets.@each.discount', function() {
@@ -188,6 +204,19 @@ export default Component.extend(FormMixin, {
             {
               type   : 'empty',
               prompt : this.l10n.t('Please enter the promotional Code')
+            }
+          ]
+        },
+        price: {
+          identifier : 'price',
+          rules      : [
+            {
+              type   : 'number',
+              prompt : this.l10n.t('Invalid number')
+            },
+            {
+              type   : 'integer[1..]',
+              prompt : this.l10n.t('Donation should be greater than 0')
             }
           ]
         }
